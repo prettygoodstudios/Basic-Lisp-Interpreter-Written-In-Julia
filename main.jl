@@ -39,7 +39,7 @@ end
 
 "Factory for creating token objects from their string representations"
 function tokenFactory(str::String)::Token
-    token = match(r"\".*\"", str)
+    token = match(r"\".*?\"", str)
     if token !== nothing
         return StringLiteral(str)
     end
@@ -74,7 +74,7 @@ end
 Function that returns first found token and program without first token
 """
 function matchToken(program::String)::Tuple{Union{String,Nothing},String}
-    token = match(r"(\w+|\d+|\(|\)|\-|\+|\/|\*|\".*\")",program)
+    token = match(r"(\w+|\d+|\(|\)|\-|\+|\/|\*|\".*?\")",program)
     if token === nothing
         return nothing, ""
     end
