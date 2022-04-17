@@ -3,10 +3,18 @@ abstract type Token end
 
 "Struct for left parens"
 struct LeftParen <: Token
+    repr::String
+    function LeftParen()
+        return new("(")
+    end
 end
 
 "Struct for right parens"
 struct RightParen <: Token
+    repr::String
+    function RightParen()
+        return new(")")
+    end
 end
 
 "Struct for all identifiers"
