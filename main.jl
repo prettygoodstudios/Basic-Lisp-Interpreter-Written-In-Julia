@@ -232,8 +232,9 @@ function evalProgram(tree::Union{Binding,Token}, parent::Binding)::Union{String,
         for (name, value) in zip(functionCode.tokens[3].tokens, tree.tokens[2].tokens)
             functionCode.identifiers[name.repr] = value
         end
-        evalProgram(functionCode.tokens[4], functionCode)
+        return evalProgram(functionCode.tokens[4], functionCode)
     end
+    throw(ErrorException("Unsupported parse tree $tree"))
 end
 
 """
@@ -245,6 +246,7 @@ function runProgram(tree::Binding)
     for f in functions
         tree.identifiers[f.tokens[2].repr] = f
     end
+    println("Functions available:")
     println(keys(tree.identifiers))
     for line in filter(x -> !isFunction(x), tree.tokens)
         println(evalProgram(line, tree))
