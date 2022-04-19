@@ -52,7 +52,7 @@ function tokenFactory(str::String)::Token
         return StringLiteral(str)
     end
 
-    token = match(r"quote|defun|if|eq", str)
+    token = match(r"quote|defun|if|eq|rest|first", str)
     if token !== nothing
         return Operator(str)
     end
@@ -92,7 +92,7 @@ end
 Function that returns first found token and program without first token
 """
 function matchToken(program::String)::Tuple{Union{String,Nothing},String}
-    token = match(r"(\w+|\d+|\(|\)|\-|\+|\/|\*|\"(.|\n)*?\")|quote|defun|if|eq|nil",program)
+    token = match(r"(\w+|\d+|\(|\)|\-|\+|\/|\*|\"(.|\n)*?\")|quote|defun|if|eq|nil|rest|first",program)
     if token === nothing
         return nothing, ""
     end
@@ -250,6 +250,12 @@ function evalProgram(tree::Union{Binding,Token}, parent::Binding)::Union{String,
             return left === right
         elseif operator === "quote"
             return map(x -> evalProgram(x, tree), tree.tokens[2].tokens)
+        elseif operator === "first"
+            list = evalProgram(tree.tokens[2], tree)
+            return list[1]
+        elseif operator === "rest"
+            list = evalProgram(tree.tokens[2], tree)
+            return list[2:size(list)[1]]
         end
     end
     if isFunctionCall(tree)
