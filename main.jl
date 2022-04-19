@@ -44,6 +44,11 @@ function tokenFactory(str::String)::Token
         return StringLiteral(str)
     end
 
+    token = match(r"quote", str)
+    if token !== nothing
+        return Operator(str)
+    end
+
     token = match(r"[|\-|\+|\/|\*]", str)
     if token !== nothing
         return Operator(str)
@@ -74,7 +79,7 @@ end
 Function that returns first found token and program without first token
 """
 function matchToken(program::String)::Tuple{Union{String,Nothing},String}
-    token = match(r"(\w+|\d+|\(|\)|\-|\+|\/|\*|\"(.|\n)*?\")",program)
+    token = match(r"(\w+|\d+|\(|\)|\-|\+|\/|\*|\"(.|\n)*?\")|quote",program)
     if token === nothing
         return nothing, ""
     end
@@ -94,4 +99,51 @@ function getTokens(program::String)::Vector{Token}
         push!(tokens, tokenFactory(token))
     end
     return tokens
+end
+
+struct Binding
+    parent::Union{Binding,Nothing}
+    tokens
+end
+
+"""
+Function that builds parse tree
+"""
+function buildParseTree(tokens::Vector{Token})
+    tree = Binding(nothing, [])
+    current = tree
+    leftParen = LeftParen()
+    rightParen = RightParen()
+    for token in tokens
+        oldCurrent = current
+        if token === leftParen
+            current = Binding(oldCurrent, [])
+            push!(oldCurrent.tokens, current)
+        elseif token === rightParen
+            current = oldCurrent.parent
+        else
+            push!(oldCurrent.tokens, token)
+        end
+    end
+    tree
+end
+
+"""
+Function that prints out parseTree 
+"""
+function printParseTree(tree, depth=0)
+    if tree === nothing
+        return
+    end
+    tabs = "\t" ^ depth
+    println(tabs * "(")
+    for token in tree.tokens 
+        if typeof(token) === Binding
+            printParseTree(token, depth+1)
+        end
+        if typeof(token) <: Token
+            println(tabs * "\t" * token.repr)
+        end
+    end
+    println(tabs * ")")
 end
