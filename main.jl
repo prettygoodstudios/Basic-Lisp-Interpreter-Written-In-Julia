@@ -18,7 +18,7 @@ struct RightParen <: Token
 end
 
 "Struct for all identifiers"
-struct Indentifier <: Token
+struct Identifier <: Token
     repr::String
 end
 
@@ -71,7 +71,7 @@ function tokenFactory(str::String)::Token
 
     token = match(r"\w+", str)
     if token !== nothing
-        return Indentifier(str)
+        return Identifier(str)
     end
 end
 
@@ -104,7 +104,7 @@ end
 struct Binding
     parent::Union{Binding,Nothing}
     tokens
-    indentifiers::Dict{String,Any}
+    identifiers::Dict{String,Any}
 end
 
 """
@@ -157,6 +157,13 @@ function isFunction(x::Union{Token, Binding})::Bool
 end
 
 """
+Determine if a binding is a function call
+"""
+function isFunctionCall(x::Union{Token, Binding})::Bool
+    return typeof(x) === Binding && typeof(x.tokens[1]) === Identifier
+end
+
+"""
 Determine if a binding is a expression with a operator
 """
 function isOperatorExpression(x::Union{Token, Binding})
@@ -165,38 +172,67 @@ function isOperatorExpression(x::Union{Token, Binding})
     end
     return false
 end
+
+"""
+Looks up identifier in bindings
+"""
+function lookupIdentifier(tree::Union{Binding,Nothing}, identifier::String)
+    if tree === nothing
+        return nothing
+    end
+    if haskey(tree.identifiers, identifier)
+        return tree.identifiers[identifier]
+    end
+    return lookupIdentifier(tree.parent, identifier)
+end
+
 """
 Evaluates program
 """
-function evalProgram(tree::Union{Binding,Token})
+function evalProgram(tree::Union{Binding,Token}, parent::Binding)::Union{String, Int32, Bool}
     if typeof(tree) === StringLiteral
         return tree.repr
     end
     if typeof(tree) === IntegerLiteral
         return parse(Int32, tree.repr)
     end
-    if typeof(tree) === Binding && isFunction(tree)
-        return evalProgram(tree.tokens[4])
+    if typeof(tree) === Identifier
+        identifier = lookupIdentifier(parent, tree.repr)
+        if identifier === nothing
+            throw(ErrorException("Identifier is not defined."))
+        end
+        return evalProgram(identifier, parent)
     end
-    if typeof(tree) === Binding && isOperatorExpression(tree)
+    if isFunction(tree)
+        return evalProgram(tree.tokens[4], tree)
+    end
+    if isOperatorExpression(tree)
         operator = tree.tokens[1].repr
         if operator === "+"
-            return evalProgram(tree.tokens[2]) + evalProgram(tree.tokens[3])
+            return evalProgram(tree.tokens[2], tree) + evalProgram(tree.tokens[3], tree)
         elseif operator === "-"
-            return evalProgram(tree.tokens[2]) - evalProgram(tree.tokens[3])
+            return evalProgram(tree.tokens[2], tree) - evalProgram(tree.tokens[3], tree)
         elseif operator === "*"
-            return evalProgram(tree.tokens[2]) * evalProgram(tree.tokens[3])
+            return evalProgram(tree.tokens[2], tree) * evalProgram(tree.tokens[3], tree)
         elseif operator === "/"
-            return evalProgram(tree.tokens[2]) / evalProgram(tree.tokens[3])
+            return evalProgram(tree.tokens[2], tree) / evalProgram(tree.tokens[3], tree)
         elseif operator === "if"
-            if evalProgram(tree.tokens[2])
-                return evalProgram(tree.tokens[3])
+            if evalProgram(tree.tokens[2], tree)
+                return evalProgram(tree.tokens[3], tree)
             elseif size(tree.tokens) === (4,)
-                return evalProgram(tree.tokens[4])
+                return evalProgram(tree.tokens[4], tree)
             end
         elseif operator === "eq"
-            return evalProgram(tree.tokens[2]) === evalProgram(tree.tokens[3])
+            return evalProgram(tree.tokens[2], tree) === evalProgram(tree.tokens[3], tree)
         end
+    end
+    if isFunctionCall(tree)
+        functionName = tree.tokens[1].repr
+        functionCode = deepcopy(lookupIdentifier(tree, functionName))
+        for (name, value) in zip(functionCode.tokens[3].tokens, tree.tokens[2].tokens)
+            functionCode.identifiers[name.repr] = value
+        end
+        evalProgram(functionCode.tokens[4], functionCode)
     end
 end
 
@@ -207,10 +243,10 @@ function runProgram(tree::Binding)
     # Find functions
     functions = filter(isFunction, tree.tokens)
     for f in functions
-        tree.identifiers[f.tokens[1].repr] = f
+        tree.identifiers[f.tokens[2].repr] = f
     end
-    println(keys(tree.indentifiers))
+    println(keys(tree.identifiers))
     for line in filter(x -> !isFunction(x), tree.tokens)
-        println(evalProgram(line))
+        println(evalProgram(line, tree))
     end
 end
