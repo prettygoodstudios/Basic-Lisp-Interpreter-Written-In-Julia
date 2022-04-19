@@ -230,6 +230,9 @@ function evalProgram(tree::Union{Binding,Token}, parent::Binding)::Union{String,
         functionName = tree.tokens[1].repr
         functionCode = deepcopy(lookupIdentifier(tree, functionName))
         for (name, value) in zip(functionCode.tokens[3].tokens, tree.tokens[2].tokens)
+            if typeof(value) === Identifier
+                value = lookupIdentifier(tree, value.repr)
+            end
             functionCode.identifiers[name.repr] = value
         end
         return evalProgram(functionCode.tokens[4], functionCode)
@@ -252,3 +255,17 @@ function runProgram(tree::Binding)
         println(evalProgram(line, tree))
     end
 end
+
+"""
+Executes script
+"""
+function execute()
+    program = ""
+    for line in eachline(ARGS[1])
+        program *= "$line\n"
+    end
+    tree = buildTree(getTokens(program))
+    runProgram(tree)
+end
+
+execute()
