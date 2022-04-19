@@ -191,7 +191,7 @@ function evalProgram(tree::Union{Binding,Token})
         elseif operator === "if"
             if evalProgram(tree.tokens[2])
                 return evalProgram(tree.tokens[3])
-            elseif count(tree.tokens) === 4
+            elseif size(tree.tokens) === (4,)
                 return evalProgram(tree.tokens[4])
             end
         elseif operator === "eq"
