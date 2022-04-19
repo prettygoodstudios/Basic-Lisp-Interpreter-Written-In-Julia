@@ -44,7 +44,7 @@ function tokenFactory(str::String)::Token
         return StringLiteral(str)
     end
 
-    token = match(r"quote", str)
+    token = match(r"quote|defun|if", str)
     if token !== nothing
         return Operator(str)
     end
@@ -79,7 +79,7 @@ end
 Function that returns first found token and program without first token
 """
 function matchToken(program::String)::Tuple{Union{String,Nothing},String}
-    token = match(r"(\w+|\d+|\(|\)|\-|\+|\/|\*|\"(.|\n)*?\")|quote",program)
+    token = match(r"(\w+|\d+|\(|\)|\-|\+|\/|\*|\"(.|\n)*?\")|quote|defun|if",program)
     if token === nothing
         return nothing, ""
     end
@@ -104,20 +104,21 @@ end
 struct Binding
     parent::Union{Binding,Nothing}
     tokens
+    indentifiers::Dict{String,Any}
 end
 
 """
-Function that builds parse tree
+Function that builds initial tree
 """
-function buildParseTree(tokens::Vector{Token})
-    tree = Binding(nothing, [])
+function buildTree(tokens::Vector{Token})
+    tree = Binding(nothing, [], Dict())
     current = tree
     leftParen = LeftParen()
     rightParen = RightParen()
     for token in tokens
         oldCurrent = current
         if token === leftParen
-            current = Binding(oldCurrent, [])
+            current = Binding(oldCurrent, [], Dict())
             push!(oldCurrent.tokens, current)
         elseif token === rightParen
             current = oldCurrent.parent
