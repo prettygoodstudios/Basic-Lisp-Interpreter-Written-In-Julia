@@ -17,6 +17,14 @@ struct RightParen <: Token
     end
 end
 
+"Struct for nil"
+struct Nil <: Token
+    repr::String
+    function Nil()
+        return new("nil")
+    end
+end
+
 "Struct for all identifiers"
 struct Identifier <: Token
     repr::String
@@ -49,6 +57,11 @@ function tokenFactory(str::String)::Token
         return Operator(str)
     end
 
+    token = match(r"nil", str)
+    if token !== nothing
+        return Nil()
+    end
+
     token = match(r"[|\-|\+|\/|\*]", str)
     if token !== nothing
         return Operator(str)
@@ -79,7 +92,7 @@ end
 Function that returns first found token and program without first token
 """
 function matchToken(program::String)::Tuple{Union{String,Nothing},String}
-    token = match(r"(\w+|\d+|\(|\)|\-|\+|\/|\*|\"(.|\n)*?\")|quote|defun|if|eq",program)
+    token = match(r"(\w+|\d+|\(|\)|\-|\+|\/|\*|\"(.|\n)*?\")|quote|defun|if|eq|nil",program)
     if token === nothing
         return nothing, ""
     end
@@ -189,7 +202,7 @@ end
 """
 Evaluates program
 """
-function evalProgram(tree::Union{Binding,Token}, parent::Binding)::Union{String, Int32, Bool}
+function evalProgram(tree::Union{Binding,Token}, parent::Binding)::Union{String, Int32, Bool, Vector}
     if typeof(tree) === StringLiteral
         return tree.repr
     end
@@ -202,6 +215,9 @@ function evalProgram(tree::Union{Binding,Token}, parent::Binding)::Union{String,
             throw(ErrorException("Identifier is not defined."))
         end
         return evalProgram(identifier, parent)
+    end
+    if typeof(tree) === Nil
+        return []
     end
     if isFunction(tree)
         return evalProgram(tree.tokens[4], tree)
@@ -223,7 +239,17 @@ function evalProgram(tree::Union{Binding,Token}, parent::Binding)::Union{String,
                 return evalProgram(tree.tokens[4], tree)
             end
         elseif operator === "eq"
-            return evalProgram(tree.tokens[2], tree) === evalProgram(tree.tokens[3], tree)
+            left = evalProgram(tree.tokens[2], tree)
+            right = evalProgram(tree.tokens[3], tree)
+            if typeof(left) <: Vector
+                left = Tuple(left)
+            end
+            if typeof(right) <: Vector
+                right = Tuple(right)
+            end
+            return left === right
+        elseif operator === "quote"
+            return map(x -> evalProgram(x, tree), tree.tokens[2].tokens)
         end
     end
     if isFunctionCall(tree)
