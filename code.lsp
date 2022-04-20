@@ -20,5 +20,17 @@
 (len ((quote (1 2 3 4 5 6))))
 (len ((quote (1 2 3 4 5 6 7 8 9 10))))
 (defun map (f a) (if (eq a nil) nil (cons (f ((first a))) (map (f (rest a))))))
-(map (fib (range (0 8))))
+(map (fib (range (0 4))))
 (defun range (start end) (if (eq start end) (cons start nil) (cons start (range ((+ start 1) end)))))
+(defun reduce (func arr start) 
+    (if (eq arr nil)
+        start
+        (reduce (
+            func
+            (rest arr) 
+            (func ((first arr) start))
+        ))
+    )
+)
+(defun sum (a b) (+ a b))
+(reduce (sum (range (1 10)) 0))

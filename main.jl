@@ -241,11 +241,10 @@ function evalProgram(tree::Union{Binding,Token}, parent::Binding)::Union{String,
         elseif operator === "eq"
             left = evalProgram(tree.tokens[2], tree)
             right = evalProgram(tree.tokens[3], tree)
-            if typeof(left) <: Vector
-                left = Tuple(left)
-            end
-            if typeof(right) <: Vector
-                right = Tuple(right)
+            if typeof(left) <: Vector && typeof(right) <: Vector
+                if size(left) === (0,) && size(right) === (0,)
+                    return true
+                end
             end
             return left === right
         elseif operator === "quote"
