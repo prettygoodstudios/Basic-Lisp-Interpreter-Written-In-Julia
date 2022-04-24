@@ -6,6 +6,7 @@ struct Paren
     text::AbstractString
 end
 
+"Stores regex to match a token and the function to create a token of that type"
 struct Matcher
     matcher::Regex
     tokenFactory::Function
@@ -21,7 +22,7 @@ struct Operator <: AbstractSourceTreeToken
     text::AbstractString
     eval::Function
     function Operator(text::AbstractString, operator::Function)
-        return new([], text, (evalToken) -> operator(evalToken(children[1]), evalToken(children[2])))
+        return new([], text, () -> operator(children[1].eval(), children[2].eval()))
     end
 end
 
@@ -35,7 +36,11 @@ struct Literal <: AbstractSourceTreeToken
 end
 
 struct Identifier <: AbstractSourceTreeToken
+    children::Vector{AbstractSourceTreeToken}
     text::AbstractString
+    function Identifier(text::AbstractString)
+        return new([], text)
+    end
 end
 
 matchers = [
@@ -55,7 +60,6 @@ function getTokens(sourceCode::String, matchers::Vector{Matcher})::Vector{Union{
     for matcher in matchers
         token = match(matcher.matcher, sourceCode)
         if token !== nothing
-
             sourceCode = replace(sourceCode, token.match => "", count=1)
             print(matcher)
             push!(tokens, matcher.tokenFactory(token.match))
@@ -63,3 +67,28 @@ function getTokens(sourceCode::String, matchers::Vector{Matcher})::Vector{Union{
     end
     tokens
 end
+
+"Recursively build abstract source tree"
+function buildAbstractSourceTree(tokens::Vector{Union{Paren, AbstractSourceTreeToken}}, parent)
+    while size(tokens)[1] > 0
+        token = pop!(tokens)
+        if token === Paren("(")
+            token = pop!(tokens)
+            push!(buildAbstractSourceTree(tokens, token.children))
+        elseif token === Paren(")")
+            return parent
+        else
+            push!(parent, token)
+        end
+    end
+    parent
+end
+
+function buildAbstractSourceTree(tokens::Vector{Union{Paren, AbstractSourceTreeToken}})
+    return buildAbstractSourceTree(tokens, [])
+end
+
+testOne = buildAbstractSourceTree(getTokens("(+ (- 5 4) 3)", matchers))
+testTwo = buildAbstractSourceTree(getTokens("(- (- 5 (+ 8 9)) (* 7 5))", matchers))
+println(testOne)
+println(testTwo)
