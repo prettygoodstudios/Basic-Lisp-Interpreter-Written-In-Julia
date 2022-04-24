@@ -27,10 +27,12 @@
         start
         (reduce (
             func
-            (rest arr) 
+            (rest arr)
             (func ((first arr) start))
         ))
     )
 )
 (defun sum (a b) (+ a b))
-(reduce (sum (range (1 10)) 0))
+(range (1 500))
+(reduce (sum (range (1 20)) 0))
+(len ((range (1 100))))

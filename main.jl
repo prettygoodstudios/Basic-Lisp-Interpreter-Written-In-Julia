@@ -45,6 +45,12 @@ struct StringLiteral <: Token
     repr::String
 end
 
+"Struct for cached result"
+struct CachedResult <: Token
+    repr::String
+    value::Union{String, Int32, Bool, Vector}
+end
+
 "Factory for creating token objects from their string representations"
 function tokenFactory(str::String)::Token
     token = match(r"\"(.|\n)*?\"", str)
@@ -114,7 +120,7 @@ function getTokens(program::String)::Vector{Token}
     return tokens
 end
 
-struct Binding
+mutable struct Binding
     parent::Union{Binding,Nothing}
     tokens
     identifiers::Dict{String,Any}
@@ -218,6 +224,9 @@ function evalProgram(tree::Union{Binding,Token}, parent::Binding)::Union{String,
     end
     if typeof(tree) === Nil
         return []
+    end
+    if typeof(tree) === CachedResult
+        return tree.value
     end
     if isFunction(tree)
         return evalProgram(tree.tokens[4], tree)
