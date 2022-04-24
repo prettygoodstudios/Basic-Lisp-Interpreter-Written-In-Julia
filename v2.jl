@@ -45,8 +45,8 @@ end
 
 matchers = [
     Matcher(r"\"(.|\n)*?\"", (text::AbstractString) -> Literal(text, text)),
+    Matcher(r"(\(|\))", (text::AbstractString) -> Paren(text)),
     Matcher(r"\d+", (text::AbstractString)  -> Literal(text, parse(Int32, text))),
-    Matcher(r"\(|\)", (text::AbstractString) -> Paren(text)),
     Matcher(r"\w+", (text::AbstractString) -> Identifier(text)),
     Matcher(r"\*", (text::AbstractString) -> Operator(text, *)),
     Matcher(r"\+", (text::AbstractString) -> Operator(text, +)),
@@ -71,11 +71,12 @@ end
 "Recursively build abstract source tree"
 function buildAbstractSourceTree(tokens::Vector{Union{Paren, AbstractSourceTreeToken}}, parent)
     while size(tokens)[1] > 0
-        token = pop!(tokens)
-        if token === Paren("(")
-            token = pop!(tokens)
-            push!(buildAbstractSourceTree(tokens, token.children))
-        elseif token === Paren(")")
+        token = popfirst!(tokens)
+        if token.text == "("
+            token = popfirst!(tokens)
+            push!(parent, token)
+            buildAbstractSourceTree(tokens, token.children)
+        elseif token.text == ")"
             return parent
         else
             push!(parent, token)
