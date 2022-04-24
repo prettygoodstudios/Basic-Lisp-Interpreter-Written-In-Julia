@@ -8,7 +8,7 @@ end
 
 "Stores regex to match a token and the function to create a token of that type"
 struct Matcher
-    matcher::Regex
+    matcher::AbstractString
     tokenFactory::Function
 end
 
@@ -44,25 +44,32 @@ struct Identifier <: AbstractSourceTreeToken
 end
 
 matchers = [
-    Matcher(r"\"(.|\n)*?\"", (text::AbstractString) -> Literal(text, text)),
-    Matcher(r"(\(|\))", (text::AbstractString) -> Paren(text)),
-    Matcher(r"\d+", (text::AbstractString)  -> Literal(text, parse(Int32, text))),
-    Matcher(r"\w+", (text::AbstractString) -> Identifier(text)),
-    Matcher(r"\*", (text::AbstractString) -> Operator(text, *)),
-    Matcher(r"\+", (text::AbstractString) -> Operator(text, +)),
-    Matcher(r"\-", (text::AbstractString) -> Operator(text, -)),
-    Matcher(r"\/", (text::AbstractString) -> Operator(text, /)),
+    Matcher("\"(.|\n)*?\"", (text::AbstractString) -> Literal(text, text)),
+    Matcher("(\\(|\\))", (text::AbstractString) -> Paren(text)),
+    Matcher("\\d+", (text::AbstractString)  -> Literal(text, parse(Int32, text))),
+    Matcher("\\w+", (text::AbstractString) -> Identifier(text)),
+    Matcher("\\*", (text::AbstractString) -> Operator(text, *)),
+    Matcher("\\+", (text::AbstractString) -> Operator(text, +)),
+    Matcher("\\-", (text::AbstractString) -> Operator(text, -)),
+    Matcher("\\/", (text::AbstractString) -> Operator(text, /)),
 ]
 
 "Generates tokens"
 function getTokens(sourceCode::String, matchers::Vector{Matcher})::Vector{Union{Paren, AbstractSourceTreeToken}}
     tokens = []
-    for matcher in matchers
-        token = match(matcher.matcher, sourceCode)
+    tokenRegex = Regex(join(map(x -> x.matcher, matchers),"|"))
+    while length(sourceCode) > 0
+        token = match(tokenRegex, sourceCode)
         if token !== nothing
             sourceCode = replace(sourceCode, token.match => "", count=1)
-            print(matcher)
-            push!(tokens, matcher.tokenFactory(token.match))
+            sourceCode = rstrip(sourceCode)
+            for matcher in matchers
+                found = match(Regex(matcher.matcher), token.match)
+                if found !== nothing
+                    push!(tokens, matcher.tokenFactory(token.match))
+                    break
+                end
+            end
         end
     end
     tokens
