@@ -22,7 +22,7 @@ struct Operator <: AbstractSourceTreeToken
     text::AbstractString
     eval::Function
     function Operator(text::AbstractString, operator::Function)
-        return new([], text, () -> operator(children[1].eval(), children[2].eval()))
+        return new([], text, (this::Operator) -> operator(this.children[1].eval(this.children[1]), this.children[2].eval(this.children[2])))
     end
 end
 
@@ -31,7 +31,7 @@ struct Literal <: AbstractSourceTreeToken
     text::AbstractString
     eval::Function
     function Literal(text::AbstractString, value::PrimitiveType)
-        return new([], text, () -> value)
+        return new([], text, (this::Literal) -> value)
     end
 end
 
@@ -55,7 +55,7 @@ matchers = [
 ]
 
 "Generates tokens"
-function getTokens(sourceCode::String, matchers::Vector{Matcher})::Vector{Union{Paren, AbstractSourceTreeToken}}
+function getTokens(sourceCode::AbstractString, matchers::Vector{Matcher})::Vector{Union{Paren, AbstractSourceTreeToken}}
     tokens = []
     tokenRegex = Regex(join(map(x -> x.matcher, matchers),"|"))
     while length(sourceCode) > 0
@@ -92,11 +92,18 @@ function buildAbstractSourceTree(tokens::Vector{Union{Paren, AbstractSourceTreeT
     parent
 end
 
-function buildAbstractSourceTree(tokens::Vector{Union{Paren, AbstractSourceTreeToken}})
+"Takes tokens from program and produces abstract source trees"
+function buildAbstractSourceTrees(tokens::Vector{Union{Paren, AbstractSourceTreeToken}})::Vector{AbstractSourceTreeToken}
     return buildAbstractSourceTree(tokens, [])
 end
 
-testOne = buildAbstractSourceTree(getTokens("(+ (- 5 4) 3)", matchers))
-testTwo = buildAbstractSourceTree(getTokens("(- (- 5 (+ 8 9)) (* 7 5))", matchers))
-println(testOne)
-println(testTwo)
+function runProgram(sourceCode::AbstractString, matchers::Vector{Matcher})
+    tokens = getTokens(sourceCode, matchers)
+    trees = buildAbstractSourceTrees(tokens)
+    for tree in trees
+        println(tree.eval(tree))
+    end
+end
+
+runProgram("(+ (- 5 4) 3)", matchers)
+runProgram("(- (- 5 (+ 8 9)) (* 7 5))", matchers)
