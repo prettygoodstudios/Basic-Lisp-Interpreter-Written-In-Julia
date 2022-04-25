@@ -1,4 +1,4 @@
-abstract type AbstractSourceTreeToken end
+abstract type AbstractSyntaxTreeToken end
 
 PrimitiveType = Union{AbstractString, Int32, Bool, Vector}
 
@@ -14,20 +14,20 @@ end
 
 struct Binding
     parent::Union{Binding,Nothing}
-    identifiers::Dict{AbstractString,Union{PrimitiveType,AbstractSourceTreeToken}}
+    identifiers::Dict{AbstractString,Union{PrimitiveType,AbstractSyntaxTreeToken}}
 end
 
-struct Operator <: AbstractSourceTreeToken
-    children::Vector{AbstractSourceTreeToken}
+struct Operator <: AbstractSyntaxTreeToken
+    children::Vector{AbstractSyntaxTreeToken}
     text::AbstractString
     eval::Function
     function Operator(text::AbstractString, operator::Function)
-        return new([], text, (this::Operator) -> operator(this.children[1].eval(this.children[1]), this.children[2].eval(this.children[2])))
+        return new([], text, (this::Operator) -> operator(map(x -> x.eval(x), this.children)...))
     end
 end
 
-struct Literal <: AbstractSourceTreeToken
-    children::Vector{AbstractSourceTreeToken}
+struct Literal <: AbstractSyntaxTreeToken
+    children::Vector{AbstractSyntaxTreeToken}
     text::AbstractString
     eval::Function
     function Literal(text::AbstractString, value::PrimitiveType)
@@ -35,8 +35,8 @@ struct Literal <: AbstractSourceTreeToken
     end
 end
 
-struct Identifier <: AbstractSourceTreeToken
-    children::Vector{AbstractSourceTreeToken}
+struct Identifier <: AbstractSyntaxTreeToken
+    children::Vector{AbstractSyntaxTreeToken}
     text::AbstractString
     function Identifier(text::AbstractString)
         return new([], text)
@@ -55,7 +55,7 @@ matchers = [
 ]
 
 "Generates tokens"
-function getTokens(sourceCode::AbstractString, matchers::Vector{Matcher})::Vector{Union{Paren, AbstractSourceTreeToken}}
+function getTokens(sourceCode::AbstractString, matchers::Vector{Matcher})::Vector{Union{Paren, AbstractSyntaxTreeToken}}
     tokens = []
     tokenRegex = Regex(join(map(x -> x.matcher, matchers),"|"))
     while length(sourceCode) > 0
@@ -76,13 +76,13 @@ function getTokens(sourceCode::AbstractString, matchers::Vector{Matcher})::Vecto
 end
 
 "Recursively build abstract source tree"
-function buildAbstractSourceTree(tokens::Vector{Union{Paren, AbstractSourceTreeToken}}, parent)
+function buildAbstractSyntaxTree(tokens::Vector{Union{Paren, AbstractSyntaxTreeToken}}, parent)
     while size(tokens)[1] > 0
         token = popfirst!(tokens)
         if token.text == "("
             token = popfirst!(tokens)
             push!(parent, token)
-            buildAbstractSourceTree(tokens, token.children)
+            buildAbstractSyntaxTree(tokens, token.children)
         elseif token.text == ")"
             return parent
         else
@@ -93,13 +93,13 @@ function buildAbstractSourceTree(tokens::Vector{Union{Paren, AbstractSourceTreeT
 end
 
 "Takes tokens from program and produces abstract source trees"
-function buildAbstractSourceTrees(tokens::Vector{Union{Paren, AbstractSourceTreeToken}})::Vector{AbstractSourceTreeToken}
-    return buildAbstractSourceTree(tokens, [])
+function buildAbstractSyntaxTrees(tokens::Vector{Union{Paren, AbstractSyntaxTreeToken}})::Vector{AbstractSyntaxTreeToken}
+    return buildAbstractSyntaxTree(tokens, [])
 end
 
 function runProgram(sourceCode::AbstractString, matchers::Vector{Matcher})
     tokens = getTokens(sourceCode, matchers)
-    trees = buildAbstractSourceTrees(tokens)
+    trees = buildAbstractSyntaxTrees(tokens)
     for tree in trees
         println(tree.eval(tree))
     end
