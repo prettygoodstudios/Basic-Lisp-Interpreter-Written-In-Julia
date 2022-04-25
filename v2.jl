@@ -166,4 +166,5 @@ runProgram("(defun fib (n blah) (+ 1 3))(+ (- 5 4) 3)(- (- 5 (+ 8 9)) (* 7 5))",
 runProgram("(defun fib () (+ 1 3))(fib ())", matchers)
 runProgram("(defun fib (n) (+ n 3))(fib 10)", matchers)
 runProgram("(eq 1 1)(eq 2 3)(if (eq 1 1) 1 3)(if (eq 1 2) 1 3)", matchers)
-runProgram("(defun fac (n) (if (eq n 0) 1 (* n (fac (- n 1)))))(fac 3)", matchers)
+runProgram("(defun fac (n) (if (eq n 0) 1 (* n (fac (- n 1)))))(fac 10)", matchers)
+runProgram("(defun fac (n) (if (eq n 0) 1 (+ n (fac (- n 1)))))(fac 100)", matchers)
