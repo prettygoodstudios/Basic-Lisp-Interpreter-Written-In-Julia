@@ -45,7 +45,7 @@ struct Operator <: AbstractSyntaxTreeToken
     text::AbstractString
     eval::Function
     function Operator(text::AbstractString, operator::Function)
-        return new([], text, (this::Operator, binding::Binding) -> operator(map(x -> x.eval(x, binding), this.children)...))
+        return new([], text, (this::Operator, binding::Binding) -> operator(this.children, child -> child.eval(child, binding)))
     end
 end
 
@@ -84,23 +84,23 @@ end
 matchers = [
     Matcher("\"(.|\n)*?\"", (text::AbstractString) -> Literal(text, text)),
     Matcher("defun", (text::AbstractString) -> FunctionDefinition()),
-    Matcher("eq", (text::AbstractString) -> Operator(text, ==)),
-    Matcher("if", (text::AbstractString) -> Operator(text, function(rest...)
-        if rest[1]
-            return rest[2]
+    Matcher("eq", (text::AbstractString) -> Operator(text, (children, eval) -> eval(children[1]) == eval(children[2]))),
+    Matcher("if", (text::AbstractString) -> Operator(text, function(children,eval)
+        if eval(children[1])
+            return eval(children[2])
         end
-        if length(rest) > 2
-            return rest[3]
+        if length(children) > 2
+            return eval(children[3])
         end
         return nothing
     end)),
     Matcher("(\\(|\\))", (text::AbstractString) -> Paren(text)),
     Matcher("\\d+", (text::AbstractString)  -> Literal(text, parse(Int32, text))),
     Matcher("\\w+", (text::AbstractString) -> Identifier(text)),
-    Matcher("\\*", (text::AbstractString) -> Operator(text, *)),
-    Matcher("\\+", (text::AbstractString) -> Operator(text, +)),
-    Matcher("\\-", (text::AbstractString) -> Operator(text, -)),
-    Matcher("\\/", (text::AbstractString) -> Operator(text, /)),
+    Matcher("\\*", (text::AbstractString) -> Operator(text, (children, eval) -> eval(children[1]) * eval(children[2]))),
+    Matcher("\\+", (text::AbstractString) -> Operator(text, (children, eval) -> eval(children[1]) + eval(children[2]))),
+    Matcher("\\-", (text::AbstractString) -> Operator(text, (children, eval) -> eval(children[1]) - eval(children[2]))),
+    Matcher("\\/", (text::AbstractString) -> Operator(text, (children, eval) -> eval(children[1]) / eval(children[2]))),
 ]
 
 "Generates tokens"
@@ -166,4 +166,4 @@ runProgram("(defun fib (n blah) (+ 1 3))(+ (- 5 4) 3)(- (- 5 (+ 8 9)) (* 7 5))",
 runProgram("(defun fib () (+ 1 3))(fib ())", matchers)
 runProgram("(defun fib (n) (+ n 3))(fib 10)", matchers)
 runProgram("(eq 1 1)(eq 2 3)(if (eq 1 1) 1 3)(if (eq 1 2) 1 3)", matchers)
-runProgram("(defun fac (n) (if (eq n 0) 1 (fac (- n 1))))(fac 3)", matchers)
+runProgram("(defun fac (n) (if (eq n 0) 1 (* n (fac (- n 1)))))(fac 3)", matchers)
