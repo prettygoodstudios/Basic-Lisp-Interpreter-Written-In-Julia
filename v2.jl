@@ -91,7 +91,7 @@ struct Identifier <: AbstractSyntaxTreeToken
 end
 
 matchers = [
-    Matcher("\"(.|\n)*?\"", (text::AbstractString) -> Literal(text, text)),
+    Matcher("\"(.|\n)*?\"", (text::AbstractString) -> Literal(text, text[2:length(text)-1])),
     Matcher("defun", (text::AbstractString) -> FunctionDefinition()),
     Matcher("eq", (text::AbstractString) -> Operator(text, (children, eval) -> eval(children[1]) == eval(children[2]))),
     Matcher("if", (text::AbstractString) -> Operator(text, function(children,eval)
@@ -194,5 +194,6 @@ runProgram("(eq nil (quote ()))(eq nil nil)(eq nil (quote (1 2 3 4)))", matchers
 runProgram("(eq nil (quote ()))(eq nil nil)(eq nil (quote (1 2 3 4)))", matchers)
 runProgram("(first (quote (1 2 3 4 5)))(rest (quote (1 2 3 4 5)))(first (quote (7 2 3 4 5)))", matchers)
 runProgram("(defun range (start end) (if (eq start end) (cons start nil) (cons start (range (+ start 1) end))))(range 1 2000)", matchers)
-runProgram("(defun test (f) (f 10 20))(defun add (a b) (+ a b))(test add)(test +)", matchers)
+runProgram("(defun test (f) (f 10 20))(defun add (a b) (+ a b))(test add)(test +)(test *)", matchers)
 runProgram("(defun test (a) (+ a 10))(test (+ 10 10))", matchers)
+runProgram("(* \"hello\" (* \" \" \"world\"))", matchers)
