@@ -73,7 +73,9 @@ struct Identifier <: AbstractSyntaxTreeToken
                         if typeof(value) === Identifier
                             value = lookupInBinding(binding, value.text)
                         end
-                        if typeof(value) !== FunctionDefinition && typeof(value) !== Operator
+                        # If it can be evaluated, evaluate it
+                        # Functions and operators cannot be directly evaluated
+                        if typeof(value) !== FunctionDefinition && (typeof(value) !== Operator || size(value.children)[1] !== 0)
                             value = Literal("Cached result", value.eval(value, binding))
                         end
                         newBinding.identifiers[name] = value
@@ -193,3 +195,4 @@ runProgram("(eq nil (quote ()))(eq nil nil)(eq nil (quote (1 2 3 4)))", matchers
 runProgram("(first (quote (1 2 3 4 5)))(rest (quote (1 2 3 4 5)))(first (quote (7 2 3 4 5)))", matchers)
 runProgram("(defun range (start end) (if (eq start end) (cons start nil) (cons start (range (+ start 1) end))))(range 1 2000)", matchers)
 runProgram("(defun test (f) (f 10 20))(defun add (a b) (+ a b))(test add)(test +)", matchers)
+runProgram("(defun test (a) (+ a 10))(test (+ 10 10))", matchers)
