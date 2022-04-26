@@ -70,7 +70,12 @@ struct Identifier <: AbstractSyntaxTreeToken
                 if size(token.children)[1] > 2
                     variableNames = map(x -> x.text, [token.children[2], token.children[2].children...])
                     for (name, value) in zip(variableNames, this.children)
-                        value = Literal("Cached result", value.eval(value, binding))
+                        if typeof(value) === Identifier
+                            value = lookupInBinding(binding, value.text)
+                        end
+                        if typeof(value) !== FunctionDefinition
+                            value = Literal("Cached result", value.eval(value, binding))
+                        end
                         newBinding.identifiers[name] = value
                     end
                 end
@@ -184,4 +189,5 @@ runProgram("(nil)(cons 1 nil)(cons 2 (cons 1 nil))", matchers)
 runProgram("(eq nil (quote ()))(eq nil nil)(eq nil (quote (1 2 3 4)))", matchers)
 runProgram("(eq nil (quote ()))(eq nil nil)(eq nil (quote (1 2 3 4)))", matchers)
 runProgram("(first (quote (1 2 3 4 5)))(rest (quote (1 2 3 4 5)))(first (quote (7 2 3 4 5)))", matchers)
-runProgram("(defun range (start end) (if (eq start end) (cons start nil) (cons start (range (+ start 1) end))))(range 1 2000)", matchers)
+runProgram("(defun range (start end) (if (eq start end) (cons start nil) (cons start (range (+ start 1) end))))(range 1 3000)", matchers)
+runProgram("(defun test (f) (f 10 20))(defun add (a b) (+ a b))(test add)", matchers)
