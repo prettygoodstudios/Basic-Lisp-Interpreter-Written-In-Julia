@@ -94,6 +94,16 @@ matchers = [
         end
         return nothing
     end)),
+    Matcher("quote", (text::AbstractString) -> Operator(text, function (children, eval)
+        if size(children)[1] > 0
+            return [eval(children[1]), map(x -> eval(x), children[1].children)...]
+        end
+        map(x -> eval(x), children)
+    end)),
+    Matcher("nil", (text::AbstractString) -> Literal("nil", [])),
+    Matcher("cons", (text::AbstractString) -> Operator("cons", (children, eval) -> [eval(children[1])..., eval(children[2])...])),
+    Matcher("first", (text::AbstractString) -> Operator("cons", (children, eval) -> eval(children[1].children[1]))),
+    Matcher("rest", (text::AbstractString) -> Operator("cons", (children, eval) -> map(x -> eval(x), children[1].children[1].children))),
     Matcher("(\\(|\\))", (text::AbstractString) -> Paren(text)),
     Matcher("\\d+", (text::AbstractString)  -> Literal(text, parse(Int32, text))),
     Matcher("\\w+", (text::AbstractString) -> Identifier(text)),
@@ -168,3 +178,10 @@ runProgram("(defun fib (n) (+ n 3))(fib 10)", matchers)
 runProgram("(eq 1 1)(eq 2 3)(if (eq 1 1) 1 3)(if (eq 1 2) 1 3)", matchers)
 runProgram("(defun fac (n) (if (eq n 0) 1 (* n (fac (- n 1)))))(fac 10)", matchers)
 runProgram("(defun fac (n) (if (eq n 0) 1 (+ n (fac (- n 1)))))(fac 100)", matchers)
+runProgram("(quote (1 2 3 4 5))", matchers)
+runProgram("(quote (1 2 3 \"hello world \n testing again\" 5))", matchers)
+runProgram("(nil)(cons 1 nil)(cons 2 (cons 1 nil))", matchers)
+runProgram("(eq nil (quote ()))(eq nil nil)(eq nil (quote (1 2 3 4)))", matchers)
+runProgram("(eq nil (quote ()))(eq nil nil)(eq nil (quote (1 2 3 4)))", matchers)
+runProgram("(first (quote (1 2 3 4 5)))(rest (quote (1 2 3 4 5)))(first (quote (7 2 3 4 5)))", matchers)
+runProgram("(defun range (start end) (if (eq start end) (cons start nil) (cons start (range (+ start 1) end))))(range 1 2000)", matchers)
