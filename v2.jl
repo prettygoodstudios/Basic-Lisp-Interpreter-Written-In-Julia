@@ -111,8 +111,14 @@ matchers = [
     end)),
     Matcher("nil", (text::AbstractString) -> Literal("nil", [])),
     Matcher("cons", (text::AbstractString) -> Operator("cons", (children, eval) -> [eval(children[1])..., eval(children[2])...])),
-    Matcher("first", (text::AbstractString) -> Operator("cons", (children, eval) -> eval(children[1].children[1]))),
-    Matcher("rest", (text::AbstractString) -> Operator("cons", (children, eval) -> map(x -> eval(x), children[1].children[1].children))),
+    Matcher("first", (text::AbstractString) -> Operator("first", (children, eval) -> eval(children[1].children[1]))),
+    Matcher("rest", (text::AbstractString) -> Operator("rest", (children, eval) -> map(x -> eval(x), children[1].children[1].children))),
+    Matcher("index", (text::AbstractString) -> Operator("index", (children, eval) -> eval(children[1])[eval(children[2])])),
+    Matcher("true", (text::AbstractString) -> Literal("true", true)),
+    Matcher("false", (text::AbstractString) -> Literal("false", false)),
+    Matcher("\\&\\&", (text::AbstractString) -> Operator("&&", (children, eval) -> eval(children[1]) && eval(children[2]))),
+    Matcher("\\|\\|", (text::AbstractString) -> Operator("||", (children, eval) -> eval(children[1]) || eval(children[2]))),
+    Matcher("\\!", (text::AbstractString) -> Operator("!", (children, eval) -> !eval(children[1]))),
     Matcher("(\\(|\\))", (text::AbstractString) -> Paren(text)),
     Matcher("\\d+", (text::AbstractString)  -> Literal(text, parse(Int32, text))),
     Matcher("\\w+", (text::AbstractString) -> Identifier(text)),
@@ -197,3 +203,5 @@ runProgram("(defun range (start end) (if (eq start end) (cons start nil) (cons s
 runProgram("(defun test (f) (f 10 20))(defun add (a b) (+ a b))(test add)(test +)(test *)", matchers)
 runProgram("(defun test (a) (+ a 10))(test (+ 10 10))", matchers)
 runProgram("(* \"hello\" (* \" \" \"world\"))", matchers)
+runProgram("(index (* \"hello\" (* \" \" \"world\")) 1)(index (quote (1 2 3 4 5)) 3)", matchers)
+runProgram("(true)(false)(&& true false)(&& true true)(|| true false)(|| false false)(! false)", matchers)
