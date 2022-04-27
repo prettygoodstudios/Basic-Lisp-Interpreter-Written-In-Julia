@@ -111,8 +111,11 @@ matchers = [
     end)),
     Matcher("nil", (text::AbstractString) -> Literal("nil", [])),
     Matcher("cons", (text::AbstractString) -> Operator("cons", (children, eval) -> [eval(children[1])..., eval(children[2])...])),
-    Matcher("first", (text::AbstractString) -> Operator("first", (children, eval) -> eval(children[1].children[1]))),
-    Matcher("rest", (text::AbstractString) -> Operator("rest", (children, eval) -> map(x -> eval(x), children[1].children[1].children))),
+    Matcher("first", (text::AbstractString) -> Operator("first", (children, eval) -> first(eval(children[1])))),
+    Matcher("rest", (text::AbstractString) -> Operator("rest", function (children, eval) 
+        l = eval(children[1])
+        l[2:length(l)]
+    end)),
     Matcher("index", (text::AbstractString) -> Operator("index", (children, eval) -> eval(children[1])[eval(children[2])])),
     Matcher("true", (text::AbstractString) -> Literal("true", true)),
     Matcher("false", (text::AbstractString) -> Literal("false", false)),
@@ -198,9 +201,10 @@ function repl()
     binding = nothing
     while true
         try 
+            print("> ")
             binding = runProgram(readline(), matchers, binding)
         catch error
-            pritnln(error)
+            println(error)
             if isa(error, InterruptException)
                 exit()
             end
@@ -229,4 +233,5 @@ elseif ARGS[1] === "-t"
     runProgram("(* \"hello\" (* \" \" \"world\"))", matchers)
     runProgram("(index (* \"hello\" (* \" \" \"world\")) 1)(index (quote (1 2 3 4 5)) 3)", matchers)
     runProgram("(true)(false)(&& true false)(&& true true)(|| true false)(|| false false)(! false)", matchers)
+    runProgram("(defun map (f iter) (if (eq iter nil) nil (cons (f (first iter)) (map f (rest iter)))))(defun double (n) (* n 2))(map double (quote (1 2 3 4)))", matchers)
 end
