@@ -65,17 +65,17 @@ struct Identifier <: AbstractSyntaxTreeToken
     function Identifier(text::AbstractString)
         return new([], text, function (this::Identifier, binding::Binding)
             token = lookupInBinding(binding, this.text)
-            if typeof(token) === FunctionDefinition
+            if isa(token, FunctionDefinition)
                 newBinding = Binding(binding, Dict())
-                if size(token.children)[1] > 2
+                if length(token.children) > 2
                     variableNames = map(x -> x.text, [token.children[2], token.children[2].children...])
                     for (name, value) in zip(variableNames, this.children)
-                        if typeof(value) === Identifier
+                        if isa(value, Identifier)
                             value = lookupInBinding(binding, value.text)
                         end
                         # If it can be evaluated, evaluate it
                         # Functions and operators cannot be directly evaluated
-                        if typeof(value) !== FunctionDefinition && (typeof(value) !== Operator || size(value.children)[1] !== 0)
+                        if !isa(value, FunctionDefinition) && (!isa(value, Operator) || length(value.children) !== 0)
                             value = Literal("Cached result", value.eval(value, binding))
                         end
                         newBinding.identifiers[name] = value
@@ -104,7 +104,7 @@ matchers = [
         return nothing
     end)),
     Matcher("quote", (text::AbstractString) -> Operator(text, function (children, eval)
-        if size(children)[1] > 0
+        if length(children) > 0
             return [eval(children[1]), map(x -> eval(x), children[1].children)...]
         end
         map(x -> eval(x), children)
@@ -151,7 +151,7 @@ end
 
 "Recursively build abstract syntax tree"
 function buildAbstractSyntaxTree(tokens::Vector{Union{Paren, AbstractSyntaxTreeToken}}, parent)
-    while size(tokens)[1] > 0
+    while length(tokens) > 0
         token = popfirst!(tokens)
         if token.text == "("
             token = popfirst!(tokens)
@@ -173,35 +173,60 @@ function buildAbstractSyntaxTrees(tokens::Vector{Union{Paren, AbstractSyntaxTree
     return buildAbstractSyntaxTree(tokens, [])
 end
 
-function runProgram(sourceCode::AbstractString, matchers::Vector{Matcher})
+function runProgram(sourceCode::AbstractString, matchers::Vector{Matcher}, binding::Union{Nothing, Binding})::Binding
     tokens = getTokens(sourceCode, matchers)
     trees = buildAbstractSyntaxTrees(tokens)
-    binding = Binding(nothing, Dict())
-    for tree in filter(x -> typeof(x) === FunctionDefinition, trees)
+    if binding === nothing
+        binding = Binding(nothing, Dict())
+    end
+    for tree in filter(x -> isa(x, FunctionDefinition), trees)
         binding.identifiers[tree.children[1].text] = tree
     end
-    println(keys(binding.identifiers))
-    trees = filter(x -> typeof(x) !== FunctionDefinition, trees)
+    trees = filter(x -> !isa(x, FunctionDefinition), trees)
     for tree in trees
         println(tree.eval(tree, binding))
     end
+    binding
 end
 
-runProgram("(defun fib (n blah) (+ 1 3))(+ (- 5 4) 3)(- (- 5 (+ 8 9)) (* 7 5))", matchers)
-runProgram("(defun fib () (+ 1 3))(fib ())", matchers)
-runProgram("(defun fib (n) (+ n 3))(fib 10)", matchers)
-runProgram("(eq 1 1)(eq 2 3)(if (eq 1 1) 1 3)(if (eq 1 2) 1 3)", matchers)
-runProgram("(defun fac (n) (if (eq n 0) 1 (* n (fac (- n 1)))))(fac 10)", matchers)
-runProgram("(defun fac (n) (if (eq n 0) 1 (+ n (fac (- n 1)))))(fac 100)", matchers)
-runProgram("(quote (1 2 3 4 5))", matchers)
-runProgram("(quote (1 2 3 \"hello world \n testing again\" 5))", matchers)
-runProgram("(nil)(cons 1 nil)(cons 2 (cons 1 nil))", matchers)
-runProgram("(eq nil (quote ()))(eq nil nil)(eq nil (quote (1 2 3 4)))", matchers)
-runProgram("(eq nil (quote ()))(eq nil nil)(eq nil (quote (1 2 3 4)))", matchers)
-runProgram("(first (quote (1 2 3 4 5)))(rest (quote (1 2 3 4 5)))(first (quote (7 2 3 4 5)))", matchers)
-runProgram("(defun range (start end) (if (eq start end) (cons start nil) (cons start (range (+ start 1) end))))(range 1 2000)", matchers)
-runProgram("(defun test (f) (f 10 20))(defun add (a b) (+ a b))(test add)(test +)(test *)", matchers)
-runProgram("(defun test (a) (+ a 10))(test (+ 10 10))", matchers)
-runProgram("(* \"hello\" (* \" \" \"world\"))", matchers)
-runProgram("(index (* \"hello\" (* \" \" \"world\")) 1)(index (quote (1 2 3 4 5)) 3)", matchers)
-runProgram("(true)(false)(&& true false)(&& true true)(|| true false)(|| false false)(! false)", matchers)
+function runProgram(sourceCode::AbstractString, matchers::Vector{Matcher})::Binding
+    return runProgram(sourceCode, matchers, nothing)
+end
+
+function repl()
+    Base.exit_on_sigint(false)
+    binding = nothing
+    while true
+        try 
+            binding = runProgram(readline(), matchers, binding)
+        catch error
+            pritnln(error)
+            if isa(error, InterruptException)
+                exit()
+            end
+        end
+    end
+end
+
+if ARGS[1] === "-r"
+    repl()
+elseif ARGS[1] === "-t"
+    runProgram("(defun fib (n blah) (+ 1 3))(+ (- 5 4) 3)(- (- 5 (+ 8 9)) (* 7 5))", matchers)
+    runProgram("(defun fib () (+ 1 3))(fib ())", matchers)
+    runProgram("(defun fib (n) (+ n 3))(fib 10)", matchers)
+    runProgram("(eq 1 1)(eq 2 3)(if (eq 1 1) 1 3)(if (eq 1 2) 1 3)", matchers)
+    runProgram("(defun fac (n) (if (eq n 0) 1 (* n (fac (- n 1)))))(fac 10)", matchers)
+    runProgram("(defun fac (n) (if (eq n 0) 1 (+ n (fac (- n 1)))))(fac 100)", matchers)
+    runProgram("(quote (1 2 3 4 5))", matchers)
+    runProgram("(quote (1 2 3 \"hello world \n testing again\" 5))", matchers)
+    runProgram("(nil)(cons 1 nil)(cons 2 (cons 1 nil))", matchers)
+    runProgram("(eq nil (quote ()))(eq nil nil)(eq nil (quote (1 2 3 4)))", matchers)
+    runProgram("(eq nil (quote ()))(eq nil nil)(eq nil (quote (1 2 3 4)))", matchers)
+    runProgram("(first (quote (1 2 3 4 5)))(rest (quote (1 2 3 4 5)))(first (quote (7 2 3 4 5)))", matchers)
+    runProgram("(defun range (start end) (if (eq start end) (cons start nil) (cons start (range (+ start 1) end))))(range 1 500)", matchers)
+    runProgram("(defun test (f) (f 10 20))(defun add (a b) (+ a b))(test add)(test +)(test *)", matchers)
+    runProgram("(defun test (a) (+ a 10))(test (+ 10 10))", matchers)
+    runProgram("(* \"hello\" (* \" \" \"world\"))", matchers)
+    runProgram("(index (* \"hello\" (* \" \" \"world\")) 1)(index (quote (1 2 3 4 5)) 3)", matchers)
+    runProgram("(true)(false)(&& true false)(&& true true)(|| true false)(|| false false)(! false)", matchers)
+end
