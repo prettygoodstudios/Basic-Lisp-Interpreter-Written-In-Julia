@@ -216,6 +216,14 @@ function repl()
     end
 end
 
+function runFromFile(fileName::String)::Binding
+    program = ""
+    for line in eachline(fileName)
+        program *= "$line\n"
+    end
+    runProgram(program, matchers)
+end
+
 if ARGS[1] === "-r"
     repl()
 elseif ARGS[1] === "-t"
@@ -238,4 +246,6 @@ elseif ARGS[1] === "-t"
     runProgram("(index (* \"hello\" (* \" \" \"world\")) 1)(index (quote (1 2 3 4 5)) 3)", matchers)
     runProgram("(true)(false)(&& true false)(&& true true)(|| true false)(|| false false)(! false)", matchers)
     runProgram("(defun map (f iter) (if (eq iter nil) nil (cons (f (first iter)) (map f (rest iter)))))(defun double (n) (* n 2))(map double (quote (1 2 3 4)))", matchers)
+elseif ARGS[1] === "-f"
+    runFromFile(ARGS[2])
 end

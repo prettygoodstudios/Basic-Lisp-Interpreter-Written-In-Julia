@@ -36,3 +36,9 @@
 (range (1 500))
 (reduce (sum (range (1 20)) 0))
 (len ((range (1 100))))
+(defun reduce (f a i) 
+    (if (eq a nil)
+        i 
+        (+ (f i (first a)) (reduce f (rest a) (f i (first a))))
+    )
+)
