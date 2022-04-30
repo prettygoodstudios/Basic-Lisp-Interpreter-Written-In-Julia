@@ -71,7 +71,7 @@ struct Identifier <: AbstractSyntaxTreeToken
                     variableNames = map(x -> x.text, [token.children[2], token.children[2].children...])
                     for (name, value) in zip(variableNames, this.children)
                         if isa(value, Identifier) && length(value.children) !== 0
-                            newBinding.identifiers[name] = Literal("Cached result", value.eval(value, binding))
+                            newBinding.identifiers[name] = Literal("Cached result 1:", value.eval(value, binding))
                             continue
                         end
                         if isa(value, Identifier)
@@ -80,13 +80,15 @@ struct Identifier <: AbstractSyntaxTreeToken
                         # If it can be evaluated, evaluate it
                         # Functions and operators cannot be directly evaluated
                         if !isa(value, FunctionDefinition) && (!isa(value, Operator) || length(value.children) !== 0)
-                            value = Literal("Cached result", value.eval(value, binding))
+                            value = Literal("Cached result:", value.eval(value, binding))
                         end
                         newBinding.identifiers[name] = value
                     end
                 end
                 return token.eval(token, newBinding)
             end
+            token = deepcopy(token)
+            # token.children = copy(token.children)
             empty!(token.children)
             push!(token.children, this.children...)
             return token.eval(token, binding)

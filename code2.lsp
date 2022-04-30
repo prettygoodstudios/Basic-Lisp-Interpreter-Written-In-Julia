@@ -6,4 +6,5 @@
 )
 (defun sum (a b) (+ a b))
 (defun test (f a b) (f a b))
+(reduce + (quote (1 7 3 4 5)) 0)
 (test + (test + 10 10) 10)
