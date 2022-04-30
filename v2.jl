@@ -277,6 +277,19 @@ elseif ARGS[1] === "-t"
     _, output = runProgram("(defun map (f iter) (if (eq iter nil) nil (cons (f (first iter)) (map f (rest iter)))))(defun double (n) (* n 2))(map double (quote (1 2 3 4)))", matchers)
     println(output)
     @assert Tuple([2,4,6,8]) == Tuple(output[1])
+    _, output = runProgram("""
+    (defun reduce (f a i) 
+    (if (eq a nil)
+        i
+        (reduce f (rest a) (f i (first a)))
+    )
+    )
+    (defun sum (a b) (+ a b))
+    (defun test (f a b) (f a b))
+    (reduce + (quote (1 7 3 4 5)) 0)
+    (test + (test + 10 10) 10)
+    """, matchers)
+    @assert Tuple([20, 30]) == Tuple(output)
 elseif ARGS[1] === "-f"
     runFromFile(ARGS[2])
 end
