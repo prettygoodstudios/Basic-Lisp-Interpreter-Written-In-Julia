@@ -287,10 +287,11 @@ elseif ARGS[1] === "-t"
     (defun sum (a b) (+ a b))
     (defun test (f a b) (f a b))
     (reduce + (quote (1 7 3 4 5)) 0)
+    (reduce sum (quote (1 7 3 4 5)) 0)
     (test + (test + 10 10) 10)
     """, matchers)
     println(output)
-    @assert Tuple([20, 30]) == Tuple(output)
+    @assert Tuple([20, 20, 30]) == Tuple(output)
 elseif ARGS[1] === "-f"
     runFromFile(ARGS[2])
 end
