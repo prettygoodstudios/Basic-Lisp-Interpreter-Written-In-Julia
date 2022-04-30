@@ -72,7 +72,7 @@ struct Identifier <: AbstractSyntaxTreeToken
                     for (name, value) in zip(variableNames, this.children)
                         if isa(value, Identifier) && length(value.children) !== 0
                             newBinding.identifiers[name] = Literal("Cached result", value.eval(value, binding))
-                            break
+                            continue
                         end
                         if isa(value, Identifier)
                             value = lookupInBinding(binding, value.text)
