@@ -182,7 +182,7 @@ function buildAbstractSyntaxTrees(tokens::Vector{Union{Paren, AbstractSyntaxTree
     return buildAbstractSyntaxTree(tokens, [])
 end
 
-function runProgram(sourceCode::AbstractString, matchers::Vector{Matcher}, binding::Union{Nothing, Binding})::Binding
+function runProgram(sourceCode::AbstractString, matchers::Vector{Matcher}, binding::Union{Nothing, Binding})::Tuple{Binding,Vector}
     tokens = getTokens(sourceCode, matchers)
     trees = buildAbstractSyntaxTrees(tokens)
     if binding === nothing
@@ -192,13 +192,14 @@ function runProgram(sourceCode::AbstractString, matchers::Vector{Matcher}, bindi
         binding.identifiers[tree.children[1].text] = tree
     end
     trees = filter(x -> !isa(x, FunctionDefinition), trees)
+    output = []
     for tree in trees
-        println(tree.eval(tree, binding))
+        push!(output, tree.eval(tree, binding))
     end
-    binding
+    binding, output
 end
 
-function runProgram(sourceCode::AbstractString, matchers::Vector{Matcher})::Binding
+function runProgram(sourceCode::AbstractString, matchers::Vector{Matcher})::Tuple{Binding,Vector}
     return runProgram(sourceCode, matchers, nothing)
 end
 
@@ -208,7 +209,8 @@ function repl()
     while true
         try 
             print("> ")
-            binding = runProgram(readline(), matchers, binding)
+            binding,output = runProgram(readline(), matchers, binding)
+            println(output)
         catch error
             println(error)
             if isa(error, InterruptException)
@@ -223,31 +225,54 @@ function runFromFile(fileName::String)::Binding
     for line in eachline(fileName)
         program *= "$line\n"
     end
-    runProgram(program, matchers)
+    binding, output = runProgram(program, matchers)
+    for line in output
+        println(line)
+    end
+    binding
 end
 
 if ARGS[1] === "-r"
     repl()
 elseif ARGS[1] === "-t"
-    runProgram("(defun fib (n blah) (+ 1 3))(+ (- 5 4) 3)(- (- 5 (+ 8 9)) (* 7 5))", matchers)
-    runProgram("(defun fib () (+ 1 3))(fib ())", matchers)
-    runProgram("(defun fib (n) (+ n 3))(fib 10)", matchers)
-    runProgram("(eq 1 1)(eq 2 3)(if (eq 1 1) 1 3)(if (eq 1 2) 1 3)", matchers)
-    runProgram("(defun fac (n) (if (eq n 0) 1 (* n (fac (- n 1)))))(fac 10)", matchers)
-    runProgram("(defun fac (n) (if (eq n 0) 1 (+ n (fac (- n 1)))))(fac 100)", matchers)
-    runProgram("(quote (1 2 3 4 5))", matchers)
-    runProgram("(quote (1 2 3 \"hello world \n testing again\" 5))", matchers)
-    runProgram("(nil)(cons 1 nil)(cons 2 (cons 1 nil))", matchers)
-    runProgram("(eq nil (quote ()))(eq nil nil)(eq nil (quote (1 2 3 4)))", matchers)
-    runProgram("(eq nil (quote ()))(eq nil nil)(eq nil (quote (1 2 3 4)))", matchers)
-    runProgram("(first (quote (1 2 3 4 5)))(rest (quote (1 2 3 4 5)))(first (quote (7 2 3 4 5)))", matchers)
-    runProgram("(defun range (start end) (if (eq start end) (cons start nil) (cons start (range (+ start 1) end))))(range 1 500)", matchers)
-    runProgram("(defun test (f) (f 10 20))(defun add (a b) (+ a b))(test add)(test +)(test *)", matchers)
-    runProgram("(defun test (a) (+ a 10))(test (+ 10 10))", matchers)
-    runProgram("(* \"hello\" (* \" \" \"world\"))", matchers)
-    runProgram("(index (* \"hello\" (* \" \" \"world\")) 1)(index (quote (1 2 3 4 5)) 3)", matchers)
-    runProgram("(true)(false)(&& true false)(&& true true)(|| true false)(|| false false)(! false)", matchers)
-    runProgram("(defun map (f iter) (if (eq iter nil) nil (cons (f (first iter)) (map f (rest iter)))))(defun double (n) (* n 2))(map double (quote (1 2 3 4)))", matchers)
+    _, output = runProgram("(defun fib (n blah) (+ 1 3))(+ (- 5 4) 3)(- (- 5 (+ 8 9)) (* 7 5))", matchers)
+    println(output)
+    _, output = runProgram("(defun fib () (+ 1 3))(fib ())", matchers)
+    println(output)
+    _, output = runProgram("(defun fib (n) (+ n 3))(fib 10)", matchers)
+    println(output)
+    _, output = runProgram("(eq 1 1)(eq 2 3)(if (eq 1 1) 1 3)(if (eq 1 2) 1 3)", matchers)
+    println(output)
+    _, output = runProgram("(defun fac (n) (if (eq n 0) 1 (* n (fac (- n 1)))))(fac 10)", matchers)
+    println(output)
+    _, output = runProgram("(defun fac (n) (if (eq n 0) 1 (+ n (fac (- n 1)))))(fac 100)", matchers)
+    println(output)
+    _, output = runProgram("(quote (1 2 3 4 5))", matchers)
+    println(output)
+    _, output = runProgram("(quote (1 2 3 \"hello world \n testing again\" 5))", matchers)
+    println(output)
+    _, output = runProgram("(nil)(cons 1 nil)(cons 2 (cons 1 nil))", matchers)
+    println(output)
+    _, output = runProgram("(eq nil (quote ()))(eq nil nil)(eq nil (quote (1 2 3 4)))", matchers)
+    println(output)
+    _, output = runProgram("(eq nil (quote ()))(eq nil nil)(eq nil (quote (1 2 3 4)))", matchers)
+    println(output)
+    _, output = runProgram("(first (quote (1 2 3 4 5)))(rest (quote (1 2 3 4 5)))(first (quote (7 2 3 4 5)))", matchers)
+    println(output)
+    _, output = runProgram("(defun range (start end) (if (eq start end) (cons start nil) (cons start (range (+ start 1) end))))(range 1 3000)", matchers)
+    println(output)
+    _, output = runProgram("(defun test (f) (f 10 20))(defun add (a b) (+ a b))(test add)(test +)(test *)", matchers)
+    println(output)
+    _, output = runProgram("(defun test (a) (+ a 10))(test (+ 10 10))", matchers)
+    println(output)
+    _, output = runProgram("(* \"hello\" (* \" \" \"world\"))", matchers)
+    println(output)
+    _, output = runProgram("(index (* \"hello\" (* \" \" \"world\")) 1)(index (quote (1 2 3 4 5)) 3)", matchers)
+    println(output)
+    _, output = runProgram("(true)(false)(&& true false)(&& true true)(|| true false)(|| false false)(! false)", matchers)
+    println(output)
+    _, output = runProgram("(defun map (f iter) (if (eq iter nil) nil (cons (f (first iter)) (map f (rest iter)))))(defun double (n) (* n 2))(map double (quote (1 2 3 4)))", matchers)
+    println(output)
 elseif ARGS[1] === "-f"
     runFromFile(ARGS[2])
 end
