@@ -104,6 +104,7 @@ matchers = [
         push!(func.children, [Literal("cached",res), Literal("cached",curr)]...)
         return eval(func)
     end, eval(children[2]), init=eval(children[3])))),
+    Matcher("juliaRange", (text::AbstractString) -> Operator(text, (children, eval) -> [x for x in range(eval(children[1]), eval(children[2]))])),
     Matcher("eq", (text::AbstractString) -> Operator(text, (children, eval) -> eval(children[1]) == eval(children[2]))),
     Matcher("lt", (text::AbstractString) -> Operator(text, (children, eval) -> eval(children[1]) < eval(children[2]))),
     Matcher("gt", (text::AbstractString) -> Operator(text, (children, eval) -> eval(children[1]) > eval(children[2]))),
