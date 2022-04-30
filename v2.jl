@@ -99,7 +99,14 @@ end
 matchers = [
     Matcher("\"(.|\n)*?\"", (text::AbstractString) -> Literal(text, text[2:length(text)-1])),
     Matcher("defun", (text::AbstractString) -> FunctionDefinition()),
+    Matcher("juliaReduce", (text::AbstractString) -> Operator(text, (children, eval) -> reduce(function (res, curr) 
+        func = deepcopy(children[1])
+        push!(func.children, [Literal("cached",res), Literal("cached",curr)]...)
+        return eval(func)
+    end, eval(children[2]), init=eval(children[3])))),
     Matcher("eq", (text::AbstractString) -> Operator(text, (children, eval) -> eval(children[1]) == eval(children[2]))),
+    Matcher("lt", (text::AbstractString) -> Operator(text, (children, eval) -> eval(children[1]) < eval(children[2]))),
+    Matcher("gt", (text::AbstractString) -> Operator(text, (children, eval) -> eval(children[1]) > eval(children[2]))),
     Matcher("if", (text::AbstractString) -> Operator(text, function(children,eval)
         if eval(children[1])
             return eval(children[2])
@@ -293,6 +300,12 @@ elseif ARGS[1] === "-t"
     """, matchers)
     println(output)
     @assert Tuple([20, 20, 30]) == Tuple(output)
+    _, output = runProgram("(juliaReduce + (quote (1 2 3 4 5)) 0)", matchers)
+    println(output)
+    @assert output[1] == 15
+    _, output = runProgram("(juliaReduce + (quote (1 2 3 4 5)) 20)", matchers)
+    println(output)
+    @assert output[1] == 35
 elseif ARGS[1] === "-f"
     runFromFile(ARGS[2])
 end
