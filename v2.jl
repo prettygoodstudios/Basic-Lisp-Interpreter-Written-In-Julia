@@ -243,6 +243,7 @@ elseif ARGS[1] === "-t"
     @assert 3628800 == output[1]
     _, output = runProgram("(quote (1 2 3 4 5))", matchers)
     println(output)
+    @assert Tuple([1,2,3,4,5]) == Tuple(output[1])
     _, output = runProgram("(quote (1 2 3 \"hello world \n testing again\" 5))", matchers)
     println(output)
     @assert Tuple([1,2,3,"hello world \n testing again",5]) == Tuple(output[1])
