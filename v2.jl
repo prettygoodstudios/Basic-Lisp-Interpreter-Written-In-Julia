@@ -70,6 +70,7 @@ struct Identifier <: AbstractSyntaxTreeToken
                 if length(token.children) > 2
                     variableNames = map(x -> x.text, [token.children[2], token.children[2].children...])
                     for (name, value) in zip(variableNames, this.children)
+                        # Evaluate function calls
                         if isa(value, Identifier) && length(value.children) !== 0
                             newBinding.identifiers[name] = Literal("Cached result 1:", value.eval(value, binding))
                             continue
