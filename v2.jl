@@ -289,6 +289,7 @@ elseif ARGS[1] === "-t"
     (reduce + (quote (1 7 3 4 5)) 0)
     (test + (test + 10 10) 10)
     """, matchers)
+    println(output)
     @assert Tuple([20, 30]) == Tuple(output)
 elseif ARGS[1] === "-f"
     runFromFile(ARGS[2])
