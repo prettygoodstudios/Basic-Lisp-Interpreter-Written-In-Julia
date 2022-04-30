@@ -306,6 +306,12 @@ elseif ARGS[1] === "-t"
     _, output = runProgram("(juliaReduce + (quote (1 2 3 4 5)) 20)", matchers)
     println(output)
     @assert output[1] == 35
+    _, output = runProgram("(lt 3 5)(lt 5 4)(lt 5 5)", matchers)
+    println(output)
+    @assert Tuple([true, false, false]) == Tuple(output)
+    _, output = runProgram("(gt 3 5)(gt 5 4)(gt 5 5)", matchers)
+    println(output)
+    @assert Tuple([false, true, false]) == Tuple(output)
 elseif ARGS[1] === "-f"
     runFromFile(ARGS[2])
 end
