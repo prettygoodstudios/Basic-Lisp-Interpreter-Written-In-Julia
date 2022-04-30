@@ -89,7 +89,6 @@ struct Identifier <: AbstractSyntaxTreeToken
                 return token.eval(token, newBinding)
             end
             token = deepcopy(token)
-            # token.children = copy(token.children)
             empty!(token.children)
             push!(token.children, this.children...)
             return token.eval(token, binding)
