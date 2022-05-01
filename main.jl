@@ -120,9 +120,9 @@ function getTokens(program::String)::Vector{Token}
     return tokens
 end
 
+"Struct that stores variables in a paticular lexical scope"
 mutable struct Binding
     parent::Union{Binding,Nothing}
-    tokens
     identifiers::Dict{String,Any}
 end
 

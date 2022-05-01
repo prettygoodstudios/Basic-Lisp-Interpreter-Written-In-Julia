@@ -2,6 +2,7 @@ abstract type AbstractSyntaxTreeToken end
 
 PrimitiveType = Union{AbstractString, Int32, Bool, Vector}
 
+"Struct for storing parenthesis"
 struct Paren
     text::AbstractString
 end
@@ -12,6 +13,7 @@ struct Matcher
     tokenFactory::Function
 end
 
+"Struct that stores variables in a particular lexcial scope and has reference to parent scope"
 struct Binding
     parent::Union{Binding,Nothing}
     identifiers::Dict{AbstractString,Union{PrimitiveType,AbstractSyntaxTreeToken}}
@@ -28,6 +30,7 @@ function lookupInBinding(binding::Union{Binding,Nothing}, name::AbstractString):
     return lookupInBinding(binding.parent, name)
 end
 
+"Stores function definitions and handles their evaluation, when called"
 struct FunctionDefinition <: AbstractSyntaxTreeToken
     children::Vector{AbstractSyntaxTreeToken}
     text::AbstractString
@@ -40,6 +43,7 @@ struct FunctionDefinition <: AbstractSyntaxTreeToken
     end
 end
 
+"Stores operators and how to evaluate them"
 struct Operator <: AbstractSyntaxTreeToken
     children::Vector{AbstractSyntaxTreeToken}
     text::AbstractString
@@ -49,6 +53,7 @@ struct Operator <: AbstractSyntaxTreeToken
     end
 end
 
+"Stores literals and their value"
 struct Literal <: AbstractSyntaxTreeToken
     children::Vector{AbstractSyntaxTreeToken}
     text::AbstractString
@@ -58,6 +63,7 @@ struct Literal <: AbstractSyntaxTreeToken
     end
 end
 
+"Stores idenifiers and the logic to evaluate them"
 struct Identifier <: AbstractSyntaxTreeToken
     children::Vector{AbstractSyntaxTreeToken}
     text::AbstractString
@@ -96,6 +102,7 @@ struct Identifier <: AbstractSyntaxTreeToken
     end
 end
 
+# A vector of matchers. A matcher that appears before another matcher in the vector will be given higher precedence, when doing lexical analysis
 matchers = [
     Matcher("\"(.|\n)*?\"", (text::AbstractString) -> Literal(text, text[2:length(text)-1])),
     Matcher("defun", (text::AbstractString) -> FunctionDefinition()),
@@ -190,6 +197,7 @@ function buildAbstractSyntaxTrees(tokens::Vector{Union{Paren, AbstractSyntaxTree
     return buildAbstractSyntaxTree(tokens, [])
 end
 
+"Runs source code given a set of matchers and a root binding"
 function runProgram(sourceCode::AbstractString, matchers::Vector{Matcher}, binding::Union{Nothing, Binding})::Tuple{Binding,Vector}
     tokens = getTokens(sourceCode, matchers)
     trees = buildAbstractSyntaxTrees(tokens)
@@ -207,10 +215,12 @@ function runProgram(sourceCode::AbstractString, matchers::Vector{Matcher}, bindi
     binding, output
 end
 
+"Runs source code using a set of matchers"
 function runProgram(sourceCode::AbstractString, matchers::Vector{Matcher})::Tuple{Binding,Vector}
     return runProgram(sourceCode, matchers, nothing)
 end
 
+"Creates a REPL enviroment"
 function repl()
     Base.exit_on_sigint(false)
     binding = nothing
@@ -228,6 +238,7 @@ function repl()
     end
 end
 
+"Runs a progrom from a file"
 function runFromFile(fileName::String)::Binding
     program = ""
     for line in eachline(fileName)
@@ -243,6 +254,7 @@ end
 if ARGS[1] === "-r"
     repl()
 elseif ARGS[1] === "-t"
+    # Run suite of tests
     _, output = runProgram("(eq 1 1)(eq 2 3)(if (eq 1 1) 1 3)(if (eq 1 2) 1 3)", matchers)
     println(output)
     @assert Tuple([true, false, 1, 3]) == Tuple(output)
