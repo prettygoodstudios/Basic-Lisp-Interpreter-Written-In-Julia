@@ -23,4 +23,4 @@ The interpreter can enter REPL mode by running the following command from the ro
 
 ## Contributing
 
-All of the source code is located in `v2.jl`. `main.jl` includes code for a previous prototype version. The learnings from this version were used to create the second current verion.
+All of the source code is located in `v2.jl`. `v1.jl` includes code for a previous prototype version. The learnings from this version were used to create the second current verion.
