@@ -14,6 +14,7 @@ The interpreter can enter REPL mode by running the following command from the ro
 
 * Functions are first class values
 * Operators are first class values
+* Functions are "hoisted", therefore, where a function appears in a file is irrelevant
 * Operators and function can be used in the same contexts and will behave identically
 * String concatentation is performed by using the `*` operator
 * There is an operator called `index` for accesing specific indexes of string or lists
