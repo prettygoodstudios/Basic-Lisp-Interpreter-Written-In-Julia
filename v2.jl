@@ -228,7 +228,7 @@ function repl()
         try 
             print("> ")
             binding,output = runProgram(readline(), matchers, binding)
-            println(output)
+            println(join(output,"\n"))
         catch error
             println(error)
             if isa(error, InterruptException)

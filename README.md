@@ -4,7 +4,7 @@
 
 ## Description
 
-This project implements a basic lisp interpreter in Julia. Features that are supported by this interpreter include a REPL (Read Eval Print Loop), executing source code from specified files and a basic test suite.
+This project implements a basic Lisp interpreter in Julia. Features that are supported by this interpreter include a REPL (Read Eval Print Loop), executing source code from specified files and a basic test suite.
 
 ## Usage
 
