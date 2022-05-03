@@ -1,3 +1,7 @@
+(defun isPalindrome (str s e) (if (eq s e) true (&& (eq (index str s) (index str e)) (isPalindrome str (+ s 1) (- e 1)))))
+(isPalindrome "aba" 1 3)
+(isPalindrome "racecar" 1 7)
+(isPalindrome "abad" 1 4)
 (defun reduce (f a i) 
     (if (eq a nil)
         i
@@ -25,4 +29,5 @@
 (fibDP 4)
 (fibDP 5)
 (fibDP 6)
+(fibDP 7)
 (fibDP 60)
